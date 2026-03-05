@@ -12,7 +12,14 @@ const handler = async ({ method, query }: NextApiRequest, res: NextApiResponse<T
   switch (method) {
     case 'GET': {
       const { contextKeys = [] } = query;
-      const { ads: adList } = await AdGateway.listAds(Array.isArray(contextKeys) ? contextKeys : contextKeys.split(','));
+      const keys = Array.isArray(contextKeys) ? contextKeys : contextKeys.split(',');
+
+      // 请求流量异常：frontend加载推荐商品时会调用这个接口多次，模拟QPS异常的情况
+      for (let i = 0; i < 4; i++) {
+        await AdGateway.listAds(keys);
+      }
+
+      const { ads: adList } = await AdGateway.listAds(keys);
 
       return res.status(200).json(adList);
     }

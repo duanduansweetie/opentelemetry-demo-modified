@@ -920,12 +920,13 @@ services:
 
   # OpenSearch
   opensearch:
+    image: opensearchproject/opensearch:2.11.1
     container_name: opensearch
-    build:
-      context: ./
-      dockerfile: ${OPENSEARCH_DOCKERFILE}
-      cache_from:
-        - ${IMAGE_NAME}:${IMAGE_VERSION}-opensearch
+    # build:  # [降级处理] 暂时不Build，直接用稳定镜像
+    #   context: ./
+    #   dockerfile: ${OPENSEARCH_DOCKERFILE}
+    #   cache_from:
+    #     - ${IMAGE_NAME}:${IMAGE_VERSION}-opensearch
     deploy:
       resources:
         limits:
@@ -952,8 +953,8 @@ services:
       - "9200"
     healthcheck:
       test: curl -s http://localhost:9200/_cluster/health | grep -E '"status":"(green|yellow)"'
-      start_period: 10s
-      interval: 5s
+      start_period: 120s
+      interval: 10s
       timeout: 10s
-      retries: 10
+      retries: 20
     logging: *logging

@@ -8,6 +8,7 @@
 import os
 import random
 from concurrent import futures
+import requests  # [架构演示] 用于模拟循环依赖的 HTTP 回调
 
 # Pip
 import grpc
@@ -41,6 +42,27 @@ first_run = True
 
 class RecommendationService(demo_pb2_grpc.RecommendationServiceServicer):
     def ListRecommendations(self, request, context):
+        # 构造循环依赖，Recommendation回调Frontend
+        metadata = dict(context.invocation_metadata())
+        recursion_depth = int(metadata.get('x-recursion-depth', '0'))
+        
+        if recursion_depth == 0:  # 只在第一次调用时触发循环
+            try:
+                frontend_addr = os.environ.get('FRONTEND_ADDR', 'frontend:8080')
+                frontend_url = f"http://{frontend_addr}/api/cart"  # 回调 Frontend 的一个轻量接口
+               
+                # 发起回调，标记递归深度避免无限循环
+                response = requests.get(frontend_url, timeout=2, headers={'x-recursion-depth': '1'})
+               
+            except Exception as e:
+                logger.warning(f"回调 Frontend 失败: {e}")
+        
+        # 构造错误率，不稳定依赖，30%概率失败 
+        if random.random() < 0.3:
+            rec_svc_metrics["recommendation_errors_counter"].add(1, {'error.type': 'fault_injection'})
+            #抛出500异常，模拟recommendation服务不稳定
+            context.abort(grpc.StatusCode.INTERNAL, "Injected Fault: Recommendation service random failure")
+
         prod_list = get_product_list(request.product_ids)
         span = trace.get_current_span()
         span.set_attribute("app.products_recommended.count", len(prod_list))
@@ -118,6 +140,22 @@ def must_map_env(key: str):
     if value is None:
         raise Exception(f'{key} environment variable must be set')
     return value
+
+
+def init_metrics(meter):
+    rec_svc_metrics = {
+        "app_recommendations_counter": meter.create_counter(
+            "app_recommendations_counter",
+            description="The number of recommendations generated",
+            unit="1",
+        ),
+        "recommendation_errors_counter": meter.create_counter(
+            "recommendation_errors_counter",
+            description="The number of recommendation errors",
+            unit="1",
+        )
+    }
+    return rec_svc_metrics
 
 
 def check_feature_flag(flag_name: str):

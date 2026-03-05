@@ -123,12 +123,17 @@ class WebsiteUser(HttpUser):
             logging.info("User accessing index page")
             self.client.get("/")
 
-    @task(10)
+            
+    @task(100)  # 模拟请求流量倾斜，原有商品浏览权重是1
     def browse_product(self):
         product = random.choice(products)
-        with self.tracer.start_as_current_span("user_browse_product", context=Context(), attributes={"product.id": product}):
-            logging.info(f"User browsing product: {product}")
-            self.client.get("/api/products/" + product)
+        with self.tracer.start_as_current_span("user_browse_product_flood", context=Context(), attributes={"product.id": product}):
+            logging.info(f"User flooding product page: {product}")
+            #连续请求15次，制造热点流量
+            for _ in range(15):
+                self.client.get("/api/products/" + product)
+
+   
 
     @task(3)
     def get_recommendations(self):
