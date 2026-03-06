@@ -430,9 +430,9 @@ func (p *productCatalog) ListProducts(ctx context.Context, req *pb.Empty) (*pb.L
 }
 
 func (p *productCatalog) GetProduct(ctx context.Context, req *pb.GetProductRequest) (*pb.Product, error) {
-	// 构造时延，判断 Flagd 的 archLatency 是否开启
+	// 构造时延，判断 Flagd 的 addLatency 是否开启
 	client := openfeature.NewClient("productCatalog")
-	flag, _ := client.BooleanValue(ctx, "archLatency", false, openfeature.EvaluationContext{})
+	flag, _ := client.BooleanValue(ctx, "adLatency", false, openfeature.EvaluationContext{})
 	if flag {
 		time.Sleep(2 * time.Second)
 	}

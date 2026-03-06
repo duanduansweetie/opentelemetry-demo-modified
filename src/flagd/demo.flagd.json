@@ -20,7 +20,7 @@
       }
     },
     "adLatency": {
-      "defaultVariant": "off",
+      "defaultVariant": "on",
       "description": "Add latency to ad service",
       "state": "ENABLED",
       "variants": {
@@ -38,7 +38,7 @@
       }
     },
     "addCircularDependency": {
-      "defaultVariant": "off",
+      "defaultVariant": "on",
       "description": "Introduce a circular dependency between recommendation and frontend services",
       "state": "ENABLED",
       "variants": {
@@ -47,7 +47,7 @@
       }
     },
     "addErrorRate": {
-      "defaultVariant": "off",
+      "defaultVariant": "on",
       "description": "Building Error Rate in Recommendation Services",
       "state": "ENABLED",
       "variants": {
@@ -132,7 +132,7 @@
       }
     },
     "highQPS": {
-      "defaultVariant": "off",
+      "defaultVariant": "on",
       "description": "Increase QPS in the system",
       "state": "ENABLED",
       "variants": {
