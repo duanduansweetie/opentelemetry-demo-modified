@@ -14,9 +14,29 @@ const handler = async ({ method, query }: NextApiRequest, res: NextApiResponse<T
       const { contextKeys = [] } = query;
       const keys = Array.isArray(contextKeys) ? contextKeys : contextKeys.split(',');
 
+      // 判断 flagd 开关 highQPS 是否开启
+      let highQPSEnabled = false;
+      try {
+        const flagdHost = process.env.FLAGD_HOST || 'flagd';
+        const flagdPort = process.env.FLAGD_PORT || '8013';
+        const flagRes = await fetch(`http://${flagdHost}:${flagdPort}/flagd.evaluation.v1.Service/ResolveBoolean`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ flagKey: 'highQPS' })
+        });
+        const flagData = await flagRes.json();
+        if (flagData.value === true) {
+          highQPSEnabled = true;
+        }
+      } catch (err) {
+        console.error('Failed to check highQPS flag', err);
+      }
+
       // 请求流量异常：frontend加载推荐商品时会调用这个接口多次，模拟QPS异常的情况
-      for (let i = 0; i < 4; i++) {
-        await AdGateway.listAds(keys);
+      if (highQPSEnabled) {
+        for (let i = 0; i < 4; i++) {
+          await AdGateway.listAds(keys);
+        }
       }
 
       const { ads: adList } = await AdGateway.listAds(keys);

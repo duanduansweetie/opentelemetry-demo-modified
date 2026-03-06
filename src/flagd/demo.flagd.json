@@ -2,7 +2,7 @@
   "$schema": "https://flagd.dev/schema/v0/flags.json",
   "flags": {
     "adFailure": {
-      "defaultVariant": "on",
+      "defaultVariant": "off",
       "description": "Fail ad service",
       "state": "ENABLED",
       "variants": {
@@ -19,6 +19,15 @@
         "on": true
       }
     },
+    "adLatency": {
+      "defaultVariant": "off",
+      "description": "Add latency to ad service",
+      "state": "ENABLED",
+      "variants": {
+        "off": false,
+        "on": true
+      }
+    },
     "adManualGc": {
       "defaultVariant": "off",
       "description": "Triggers full manual garbage collections in the ad service",
@@ -28,8 +37,71 @@
         "on": true
       }
     },
+    "addCircularDependency": {
+      "defaultVariant": "off",
+      "description": "Introduce a circular dependency between recommendation and frontend services",
+      "state": "ENABLED",
+      "variants": {
+        "off": false,
+        "on": true
+      }
+    },
+    "addErrorRate": {
+      "defaultVariant": "off",
+      "description": "Building Error Rate in Recommendation Services",
+      "state": "ENABLED",
+      "variants": {
+        "off": false,
+        "on": true
+      }
+    },
+    "archCircular": {
+      "defaultVariant": "off",
+      "description": "Architecture Fault: Circular in Recommendation",
+      "state": "ENABLED",
+      "variants": {
+        "off": false,
+        "on": true
+      }
+    },
+    "archCrash": {
+      "defaultVariant": "off",
+      "description": "Architecture Fault: Crash in Recommendation",
+      "state": "ENABLED",
+      "variants": {
+        "off": false,
+        "on": true
+      }
+    },
+    "archLatency": {
+      "defaultVariant": "off",
+      "description": "Architecture Fault: Latency in Product Catalog",
+      "state": "ENABLED",
+      "variants": {
+        "off": false,
+        "on": true
+      }
+    },
+    "archNPlusOne": {
+      "defaultVariant": "off",
+      "description": "Architecture Fault: N+1 Frontend query",
+      "state": "ENABLED",
+      "variants": {
+        "off": false,
+        "on": true
+      }
+    },
+    "archSpike": {
+      "defaultVariant": "off",
+      "description": "Architecture Fault: Traffic Spike in Load Generator",
+      "state": "ENABLED",
+      "variants": {
+        "off": false,
+        "on": true
+      }
+    },
     "cartFailure": {
-      "defaultVariant": "on",
+      "defaultVariant": "off",
       "description": "Fail cart service",
       "state": "ENABLED",
       "variants": {
@@ -53,6 +125,15 @@
     "failedReadinessProbe": {
       "defaultVariant": "off",
       "description": "readiness probe failure for cart service",
+      "state": "ENABLED",
+      "variants": {
+        "off": false,
+        "on": true
+      }
+    },
+    "highQPS": {
+      "defaultVariant": "off",
+      "description": "Increase QPS in the system",
       "state": "ENABLED",
       "variants": {
         "off": false,
@@ -145,51 +226,6 @@
         "off": false,
         "on": true
       }
-    },
-    "archNPlusOne": {
-      "state": "ENABLED",
-      "defaultVariant": "off",
-      "variants": {
-        "on": true,
-        "off": false
-      },
-      "description": "Architecture Fault: N+1 Frontend query"
-    },
-    "archLatency": {
-      "state": "ENABLED",
-      "defaultVariant": "off",
-      "variants": {
-        "on": true,
-        "off": false
-      },
-      "description": "Architecture Fault: Latency in Product Catalog"
-    },
-    "archCrash": {
-      "state": "ENABLED",
-      "defaultVariant": "off",
-      "variants": {
-        "on": true,
-        "off": false
-      },
-      "description": "Architecture Fault: Crash in Recommendation"
-    },
-    "archCircular": {
-      "state": "ENABLED",
-      "defaultVariant": "off",
-      "variants": {
-        "on": true,
-        "off": false
-      },
-      "description": "Architecture Fault: Circular in Recommendation"
-    },
-    "archSpike": {
-      "state": "ENABLED",
-      "defaultVariant": "off",
-      "variants": {
-        "on": true,
-        "off": false
-      },
-      "description": "Architecture Fault: Traffic Spike in Load Generator"
     }
   }
 }

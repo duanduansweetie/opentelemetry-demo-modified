@@ -79,6 +79,11 @@ base_url = f"http://{os.environ.get('FLAGD_HOST', 'localhost')}:{os.environ.get(
 api.set_provider(OFREPProvider(base_url=base_url))
 api.add_hooks([TracingHook()])
 
+def get_flagd_boolean(FlagName):
+    # Initialize OpenFeature
+    client = api.get_client()
+    return client.get_boolean_value(FlagName, False)
+
 def get_flagd_value(FlagName):
     # Initialize OpenFeature
     client = api.get_client()
@@ -129,9 +134,10 @@ class WebsiteUser(HttpUser):
         product = random.choice(products)
         with self.tracer.start_as_current_span("user_browse_product_flood", context=Context(), attributes={"product.id": product}):
             logging.info(f"User flooding product page: {product}")
-            #连续请求15次，制造热点流量
-            for _ in range(15):
-                self.client.get("/api/products/" + product)
+            #如果开启了流量激增开关，则连续请求15次
+            if get_flagd_boolean("highQPS"):
+                for _ in range(15):
+                    self.client.get("/api/products/" + product)
 
    
 
