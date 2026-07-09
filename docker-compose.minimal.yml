@@ -745,6 +745,25 @@ services:
       - "${PROMETHEUS_PORT}:${PROMETHEUS_PORT}"
     logging: *logging
 
+  # PostgreSQL
+  postgresql:
+    image: ${POSTGRES_IMAGE}
+    container_name: postgresql
+    deploy:
+      resources:
+        limits:
+          memory: 80M
+    restart: unless-stopped
+    ports:
+      - ${POSTGRES_PORT}
+    environment:
+      - POSTGRES_USER=root
+      - POSTGRES_PASSWORD
+      - POSTGRES_DB
+    volumes:
+      - ./src/postgresql/init.sql:/docker-entrypoint-initdb.d/init.sql
+    logging: *logging
+
   # OpenSearch
   opensearch:
     container_name: opensearch

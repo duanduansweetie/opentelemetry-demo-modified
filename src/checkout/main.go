@@ -534,7 +534,7 @@ func (cs *checkout) convertCurrency(ctx context.Context, from *pb.Money, toCurre
 
 func (cs *checkout) chargeCard(ctx context.Context, amount *pb.Money, paymentInfo *pb.CreditCardInfo) (string, error) {
 	paymentService := cs.paymentSvcClient
-	if cs.isFeatureFlagEnabled(ctx, "paymentUnreachable") {
+	if cs.isFeatureFlagEnabled(ctx, "paymentUnreachable") || cs.isFeatureFlagEnabled(ctx, "archSinglePoint") {
 		badAddress := "badAddress:50051"
 		c := mustCreateClient(badAddress)
 		paymentService = pb.NewPaymentServiceClient(c)
@@ -662,6 +662,9 @@ func (cs *checkout) sendToPostProcessor(ctx context.Context, result *pb.OrderRes
 	}
 
 	ffValue := cs.getIntFeatureFlag(ctx, "kafkaQueueProblems")
+	if cs.isFeatureFlagEnabled(ctx, "archLongChain") && ffValue < 50 {
+		ffValue = 50
+	}
 	if ffValue > 0 {
 		logger.Info("Warning: FeatureFlag 'kafkaQueueProblems' is activated, overloading queue now.")
 		for i := 0; i < ffValue; i++ {

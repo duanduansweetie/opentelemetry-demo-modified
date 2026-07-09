@@ -135,7 +135,7 @@ class WebsiteUser(HttpUser):
         with self.tracer.start_as_current_span("user_browse_product_flood", context=Context(), attributes={"product.id": product}):
             logging.info(f"User flooding product page: {product}")
             #如果开启了流量激增开关，则连续请求15次
-            if get_flagd_boolean("highQPS"):
+            if get_flagd_boolean("highQPS") or get_flagd_boolean("archSpike") or get_flagd_boolean("archMonolith"):
                 for _ in range(15):
                     self.client.get("/api/products/" + product)
 
@@ -217,6 +217,8 @@ class WebsiteUser(HttpUser):
     def checkout_multi(self):
         user = str(uuid.uuid1())
         item_count = random.choice([2, 3, 4])
+        if get_flagd_boolean("archLongChain"):
+            item_count = random.choice([6, 7, 8])
         with self.tracer.start_as_current_span("user_checkout_multi", context=Context(),
                                             attributes={"user.id": user, "item.count": item_count}):
             for i in range(item_count):
@@ -229,6 +231,8 @@ class WebsiteUser(HttpUser):
     @task(5)
     def flood_home(self):
         flood_count = get_flagd_value("loadGeneratorFloodHomepage")
+        if get_flagd_boolean("archSpike") or get_flagd_boolean("archMonolith"):
+            flood_count = max(flood_count, 100)
         if flood_count > 0:
             with self.tracer.start_as_current_span("user_flood_home",  context=Context(), attributes={"flood.count": flood_count}):
                 logging.info(f"User flooding homepage {flood_count} times")

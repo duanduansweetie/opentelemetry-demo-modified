@@ -432,8 +432,9 @@ func (p *productCatalog) ListProducts(ctx context.Context, req *pb.Empty) (*pb.L
 func (p *productCatalog) GetProduct(ctx context.Context, req *pb.GetProductRequest) (*pb.Product, error) {
 	// 构造时延，判断 Flagd 的 addLatency 是否开启
 	client := openfeature.NewClient("productCatalog")
-	flag, _ := client.BooleanValue(ctx, "adLatency", false, openfeature.EvaluationContext{})
-	if flag {
+	addLatency, _ := client.BooleanValue(ctx, "addLatency", false, openfeature.EvaluationContext{})
+	archLatency, _ := client.BooleanValue(ctx, "archLatency", false, openfeature.EvaluationContext{})
+	if addLatency || archLatency {
 		time.Sleep(2 * time.Second)
 	}
 

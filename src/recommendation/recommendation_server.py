@@ -46,7 +46,7 @@ class RecommendationService(demo_pb2_grpc.RecommendationServiceServicer):
         metadata = dict(context.invocation_metadata())
         recursion_depth = int(metadata.get('x-recursion-depth', '0'))
         
-        if recursion_depth == 0 and check_feature_flag("addCircularDependency"):  # 只在第一次调用并且开关开启时触发循环
+        if recursion_depth == 0 and any_feature_enabled("addCircularDependency", "archCircular"):  # 只在第一次调用并且开关开启时触发循环
             try:
                 frontend_addr = os.environ.get('FRONTEND_ADDR', 'frontend:8080')
                 frontend_url = f"http://{frontend_addr}/api/cart"  # 回调 Frontend 的一个轻量接口
@@ -58,7 +58,7 @@ class RecommendationService(demo_pb2_grpc.RecommendationServiceServicer):
                 logger.warning(f"回调 Frontend 失败: {e}")
         
         # 构造错误率，不稳定依赖，在开关开启的情况下，30%概率失败 
-        if random.random() < 0.3 and check_feature_flag("addErrorRate"):
+        if random.random() < 0.3 and any_feature_enabled("addErrorRate", "archCrash"):
             rec_svc_metrics["recommendation_errors_counter"].add(1, {'error.type': 'fault_injection'})
             #抛出500异常，模拟recommendation服务不稳定
             context.abort(grpc.StatusCode.INTERNAL, "Injected Fault: Recommendation service random failure")
@@ -162,6 +162,10 @@ def check_feature_flag(flag_name: str):
     # Initialize OpenFeature
     client = api.get_client()
     return client.get_boolean_value(flag_name, False)
+
+
+def any_feature_enabled(*flag_names: str):
+    return any(check_feature_flag(flag_name) for flag_name in flag_names)
 
 
 if __name__ == "__main__":

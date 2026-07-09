@@ -824,8 +824,8 @@ services:
           memory: 1200M
     restart: unless-stopped
     ports:
-      - "${JAEGER_UI_PORT}"
-      - "${JAEGER_GRPC_PORT}"
+      - "${JAEGER_UI_PORT}:${JAEGER_UI_PORT}"
+      - "${JAEGER_GRPC_PORT}:${JAEGER_GRPC_PORT}"
     environment:
       - JAEGER_HOST
       - JAEGER_GRPC_PORT

@@ -11,17 +11,8 @@
       }
     },
     "adHighCpu": {
-      "defaultVariant": "on",
+      "defaultVariant": "off",
       "description": "Triggers high cpu load in the ad service",
-      "state": "ENABLED",
-      "variants": {
-        "off": false,
-        "on": true
-      }
-    },
-    "adLatency": {
-      "defaultVariant": "on",
-      "description": "Add latency to ad service",
       "state": "ENABLED",
       "variants": {
         "off": false,
@@ -38,7 +29,7 @@
       }
     },
     "addCircularDependency": {
-      "defaultVariant": "on",
+      "defaultVariant": "off",
       "description": "Introduce a circular dependency between recommendation and frontend services",
       "state": "ENABLED",
       "variants": {
@@ -47,8 +38,17 @@
       }
     },
     "addErrorRate": {
-      "defaultVariant": "on",
+      "defaultVariant": "off",
       "description": "Building Error Rate in Recommendation Services",
+      "state": "ENABLED",
+      "variants": {
+        "off": false,
+        "on": true
+      }
+    },
+    "addLatency": {
+      "defaultVariant": "off",
+      "description": "Add latency to ad service",
       "state": "ENABLED",
       "variants": {
         "off": false,
@@ -82,9 +82,36 @@
         "on": true
       }
     },
+    "archLongChain": {
+      "defaultVariant": "off",
+      "description": "Architecture Fault: Longer checkout and async post-processing chain",
+      "state": "ENABLED",
+      "variants": {
+        "off": false,
+        "on": true
+      }
+    },
+    "archMonolith": {
+      "defaultVariant": "off",
+      "description": "Architecture Fault: Frontend behaves like a monolithic aggregator",
+      "state": "ENABLED",
+      "variants": {
+        "off": false,
+        "on": true
+      }
+    },
     "archNPlusOne": {
       "defaultVariant": "off",
       "description": "Architecture Fault: N+1 Frontend query",
+      "state": "ENABLED",
+      "variants": {
+        "off": false,
+        "on": true
+      }
+    },
+    "archSinglePoint": {
+      "defaultVariant": "off",
+      "description": "Architecture Fault: Critical checkout payment path becomes unavailable",
       "state": "ENABLED",
       "variants": {
         "off": false,
@@ -132,7 +159,7 @@
       }
     },
     "highQPS": {
-      "defaultVariant": "on",
+      "defaultVariant": "off",
       "description": "Increase QPS in the system",
       "state": "ENABLED",
       "variants": {
