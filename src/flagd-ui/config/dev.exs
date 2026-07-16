@@ -17,7 +17,7 @@ config :flagd_ui, FlagdUiWeb.Endpoint,
   check_origin: false,
   code_reloader: true,
   debug_errors: true,
-  secret_key_base: "9CY+MFunosoVAMkzDqYQnSIYRDoaheVhN0pXKk0T3RJRU/FT5wGTZ1rUkZj/jXW/",
+  secret_key_base: "dev-secret-key-base-not-for-production-change-me-dev-secret-key-base",
   watchers: [
     esbuild: {Esbuild, :install_and_run, [:flagd_ui, ~w(--sourcemap=inline --watch)]},
     tailwind: {Tailwind, :install_and_run, [:flagd_ui, ~w(--watch)]}

@@ -704,7 +704,7 @@ services:
       - OTEL_EXPORTER_OTLP_METRICS_TEMPORALITY_PREFERENCE
       - OTEL_RESOURCE_ATTRIBUTES
       - OTEL_SERVICE_NAME=flagd-ui
-      - SECRET_KEY_BASE=yYrECL4qbNwleYInGJYvVnSkwJuSQJ4ijPTx5tirGUXrbznFIBFVJdPl5t6O9ASw
+      - SECRET_KEY_BASE=${FLAGD_UI_SECRET_KEY_BASE:?Set FLAGD_UI_SECRET_KEY_BASE before starting flagd-ui}
       - PHX_HOST=localhost
     ports:
       - "${FLAGD_UI_PORT}"

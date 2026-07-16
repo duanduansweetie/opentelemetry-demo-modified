@@ -382,8 +382,9 @@ func (cs *checkout) PlaceOrder(ctx context.Context, req *pb.PlaceOrderRequest) (
 		logger.Info(fmt.Sprintf("order confirmation email sent to %q", req.Email))
 	}
 
-	// send to kafka only if kafka broker address is set
-	if cs.kafkaBrokerSvcAddr != "" {
+	// Keep baseline checkout responsive. The async post-processing path is only
+	// part of the runtime fault demos, so enable it when those flags are active.
+	if cs.shouldSendToPostProcessor(ctx) {
 		logger.Info("sending to postProcessor")
 		cs.sendToPostProcessor(ctx, orderResult)
 	}
@@ -729,4 +730,16 @@ func (cs *checkout) getIntFeatureFlag(ctx context.Context, featureFlagName strin
 	)
 
 	return int(featureFlagValue)
+}
+
+func (cs *checkout) shouldSendToPostProcessor(ctx context.Context) bool {
+	if cs.kafkaBrokerSvcAddr == "" {
+		return false
+	}
+
+	if cs.isFeatureFlagEnabled(ctx, "archLongChain") {
+		return true
+	}
+
+	return cs.getIntFeatureFlag(ctx, "kafkaQueueProblems") > 0
 }

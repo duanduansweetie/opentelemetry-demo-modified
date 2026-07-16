@@ -19199,7 +19199,10 @@ spec:
             - name: FLAGD_UI_PORT
               value: "4000"
             - name: SECRET_KEY_BASE
-              value: yYrECL4qbNwleYInGJYvVnSkwJuSQJ4ijPTx5tirGUXrbznFIBFVJdPl5t6O9ASw
+              valueFrom:
+                secretKeyRef:
+                  name: flagd-ui-secret
+                  key: SECRET_KEY_BASE
             - name: PHX_HOST
               value: localhost
             - name: OTEL_RESOURCE_ATTRIBUTES

@@ -10,6 +10,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"io/fs"
 	"log/slog"
 	"net"
 	"os"
@@ -49,6 +50,7 @@ import (
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/reflection"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/encoding/protojson"
 
 	"github.com/XSAM/otelsql"
 )
@@ -61,12 +63,14 @@ var (
 	logger            *slog.Logger
 	resource          *sdkresource.Resource
 	initResourcesOnce sync.Once
+	fileCatalog       []*pb.Product
 	db                *sql.DB
 	reg               metric.Registration
 )
 
 func init() {
 	logger = otelslog.NewLogger("product-catalog")
+	loadFileCatalog()
 }
 
 func initResource() *sdkresource.Resource {
@@ -166,6 +170,90 @@ func initDatabase() error {
 	return nil
 }
 
+func loadFileCatalog() {
+	products, err := readProductFiles()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "filesystem fallback load failed: %v\n", err)
+		logger.Warn(fmt.Sprintf("Unable to load filesystem product fallback: %v", err))
+		return
+	}
+
+	fileCatalog = products
+	fmt.Fprintf(os.Stderr, "filesystem fallback loaded %d products\n", len(fileCatalog))
+	logger.Info(fmt.Sprintf("Loaded %d fallback products from filesystem", len(fileCatalog)))
+}
+
+func readProductFiles() ([]*pb.Product, error) {
+	entries, err := os.ReadDir("./products")
+	if err != nil {
+		return nil, err
+	}
+
+	jsonFiles := make([]fs.FileInfo, 0, len(entries))
+	for _, entry := range entries {
+		if !strings.HasSuffix(entry.Name(), ".json") {
+			continue
+		}
+		info, err := entry.Info()
+		if err != nil {
+			return nil, err
+		}
+		jsonFiles = append(jsonFiles, info)
+	}
+
+	var products []*pb.Product
+	for _, f := range jsonFiles {
+		jsonData, err := os.ReadFile("./products/" + f.Name())
+		if err != nil {
+			return nil, err
+		}
+
+		var res pb.ListProductsResponse
+		if err := protojson.Unmarshal(jsonData, &res); err != nil {
+			return nil, err
+		}
+		products = append(products, res.Products...)
+	}
+
+	return products, nil
+}
+
+func listProductsFromFallback() []*pb.Product {
+	if len(fileCatalog) == 0 {
+		loadFileCatalog()
+	}
+	return fileCatalog
+}
+
+func getProductFromFallback(productID string) *pb.Product {
+	if len(fileCatalog) == 0 {
+		loadFileCatalog()
+	}
+	for _, product := range fileCatalog {
+		if product.Id == productID {
+			return product
+		}
+	}
+	return nil
+}
+
+func searchProductsFromFallback(query string) []*pb.Product {
+	if len(fileCatalog) == 0 {
+		loadFileCatalog()
+	}
+	var result []*pb.Product
+	query = strings.ToLower(query)
+
+	for _, product := range fileCatalog {
+		if strings.Contains(strings.ToLower(product.Name), query) ||
+			strings.Contains(strings.ToLower(product.Description), query) {
+			result = append(result, product)
+		}
+	}
+
+	return result
+}
+
 func main() {
 	lp := initLoggerProvider()
 	defer func() {
@@ -191,10 +279,12 @@ func main() {
 		logger.Info("Shutdown meter provider")
 	}()
 
-	// Initialize database connection
 	if err := initDatabase(); err != nil {
-		logger.Error(fmt.Sprintf("Error initializing database: %v", err))
-		os.Exit(1)
+		if len(fileCatalog) == 0 {
+			logger.Error(fmt.Sprintf("Error initializing database and no filesystem fallback available: %v", err))
+			os.Exit(1)
+		}
+		logger.Warn(fmt.Sprintf("Database unavailable, using filesystem fallback: %v", err))
 	}
 	defer func() {
 		if db != nil {
@@ -417,12 +507,34 @@ func (p *productCatalog) Watch(req *healthpb.HealthCheckRequest, ws healthpb.Hea
 func (p *productCatalog) ListProducts(ctx context.Context, req *pb.Empty) (*pb.ListProductsResponse, error) {
 	span := trace.SpanFromContext(ctx)
 
-	products, err := loadProductsFromDB(ctx)
-	if err != nil {
-		span.SetStatus(otelcodes.Error, err.Error())
-		return nil, status.Errorf(codes.Internal, "failed to load products: %v", err)
+	products := listProductsFromFallback()
+	if len(products) > 0 {
+		span.SetAttributes(
+			attribute.Int("app.products.count", len(products)),
+		)
+		return &pb.ListProductsResponse{Products: products}, nil
 	}
 
+	products, err := loadProductsFromDB(ctx)
+	if err == nil && len(products) > 0 {
+		span.SetAttributes(
+			attribute.Int("app.products.count", len(products)),
+		)
+		return &pb.ListProductsResponse{Products: products}, nil
+	}
+
+	products = listProductsFromFallback()
+	if len(products) == 0 {
+		msg := "failed to load products from database and fallback catalog"
+		if err != nil {
+			msg = fmt.Sprintf("%s: %v", msg, err)
+		}
+		span.SetStatus(otelcodes.Error, msg)
+		return nil, status.Errorf(codes.Internal, msg)
+	}
+	if err != nil {
+		span.AddEvent("database product list unavailable, using filesystem fallback")
+	}
 	span.SetAttributes(
 		attribute.Int("app.products.count", len(products)),
 	)
@@ -451,12 +563,16 @@ func (p *productCatalog) GetProduct(ctx context.Context, req *pb.GetProductReque
 		return nil, status.Errorf(codes.Internal, msg)
 	}
 
-	found, err := getProductFromDB(ctx, req.Id)
-	if err != nil {
-		msg := fmt.Sprintf("Product Not Found: %s", req.Id)
-		span.SetStatus(otelcodes.Error, msg)
-		span.AddEvent(msg)
-		return nil, status.Errorf(codes.NotFound, msg)
+	found := getProductFromFallback(req.Id)
+	if found == nil {
+		var err error
+		found, err = getProductFromDB(ctx, req.Id)
+		if err != nil {
+			msg := fmt.Sprintf("Product Not Found: %s", req.Id)
+			span.SetStatus(otelcodes.Error, msg)
+			span.AddEvent(msg)
+			return nil, status.Errorf(codes.NotFound, msg)
+		}
 	}
 
 	span.AddEvent("Product Found")
@@ -478,12 +594,26 @@ func (p *productCatalog) GetProduct(ctx context.Context, req *pb.GetProductReque
 func (p *productCatalog) SearchProducts(ctx context.Context, req *pb.SearchProductsRequest) (*pb.SearchProductsResponse, error) {
 	span := trace.SpanFromContext(ctx)
 
-	result, err := searchProductsFromDB(ctx, req.Query)
-	if err != nil {
-		span.SetStatus(otelcodes.Error, err.Error())
-		return nil, status.Errorf(codes.Internal, "failed to search products: %v", err)
+	result := searchProductsFromFallback(req.Query)
+	if len(result) > 0 {
+		span.SetAttributes(
+			attribute.Int("app.products_search.count", len(result)),
+		)
+		return &pb.SearchProductsResponse{Results: result}, nil
 	}
 
+	result, err := searchProductsFromDB(ctx, req.Query)
+	if err == nil {
+		span.SetAttributes(
+			attribute.Int("app.products_search.count", len(result)),
+		)
+		return &pb.SearchProductsResponse{Results: result}, nil
+	}
+
+	result = searchProductsFromFallback(req.Query)
+	if err != nil {
+		span.AddEvent("database search unavailable, using filesystem fallback")
+	}
 	span.SetAttributes(
 		attribute.Int("app.products_search.count", len(result)),
 	)

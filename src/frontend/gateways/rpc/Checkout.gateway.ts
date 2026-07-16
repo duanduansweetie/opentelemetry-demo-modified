@@ -4,12 +4,12 @@
 import { ChannelCredentials } from '@grpc/grpc-js';
 import { CheckoutServiceClient, PlaceOrderRequest, PlaceOrderResponse } from '../../protos/demo';
 
-const { CHECKOUT_ADDR = '' } = process.env;
-
-const client = new CheckoutServiceClient(CHECKOUT_ADDR, ChannelCredentials.createInsecure());
+const createClient = () =>
+  new CheckoutServiceClient(process.env.CHECKOUT_ADDR || '', ChannelCredentials.createInsecure());
 
 const CheckoutGateway = () => ({
   placeOrder(order: PlaceOrderRequest) {
+    const client = createClient();
     return new Promise<PlaceOrderResponse>((resolve, reject) =>
       client.placeOrder(order, (error, response) => (error ? reject(error) : resolve(response)))
     );

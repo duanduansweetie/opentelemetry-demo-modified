@@ -8,7 +8,7 @@ import Config
 config :flagd_ui, FlagdUiWeb.Endpoint,
   url: [path: "/"],
   http: [ip: {127, 0, 0, 1}, port: 4002],
-  secret_key_base: "7WKq9+4aRwQEUAE69h03WLZKqkUmgMOlrrXvsq28ZvKNK9HSinOQ3ZBcnUG/eSgb",
+  secret_key_base: "test-secret-key-base-not-for-production-change-me-test-secret-key-base",
   server: false
 
 # In test we don't send emails

@@ -4,12 +4,12 @@
 import { ChannelCredentials } from '@grpc/grpc-js';
 import { ListRecommendationsResponse, RecommendationServiceClient } from '../../protos/demo';
 
-const { RECOMMENDATION_ADDR = '' } = process.env;
-
-const client = new RecommendationServiceClient(RECOMMENDATION_ADDR, ChannelCredentials.createInsecure());
+const createClient = () =>
+  new RecommendationServiceClient(process.env.RECOMMENDATION_ADDR || '', ChannelCredentials.createInsecure());
 
 const RecommendationsGateway = () => ({
   listRecommendations(userId: string, productIds: string[]) {
+    const client = createClient();
     return new Promise<ListRecommendationsResponse>((resolve, reject) =>
       client.listRecommendations({ userId, productIds }, (error, response) =>
         error ? reject(error) : resolve(response)

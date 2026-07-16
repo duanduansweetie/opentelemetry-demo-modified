@@ -4,12 +4,12 @@
 import { ChannelCredentials } from '@grpc/grpc-js';
 import { AdResponse, AdServiceClient } from '../../protos/demo';
 
-const { AD_ADDR = '' } = process.env;
-
-const client = new AdServiceClient(AD_ADDR, ChannelCredentials.createInsecure());
+const createClient = () =>
+  new AdServiceClient(process.env.AD_ADDR || '', ChannelCredentials.createInsecure());
 
 const AdGateway = () => ({
   listAds(contextKeys: string[]) {
+    const client = createClient();
     return new Promise<AdResponse>((resolve, reject) =>
       client.getAds({ contextKeys: contextKeys }, (error, response) => (error ? reject(error) : resolve(response)))
     );
